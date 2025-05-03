@@ -1,13 +1,9 @@
 # Expense Tracker
 
-```
-  _____                              _____               _             
- | ____|_  ___ __  ___ _ __  ___  __|_   _| __ __ _  ___| | _____ _ __ 
- |  _| \ \/ / '_ \/ _ \ '_ \/ __|/ _ \| || '__/ _` |/ __| |/ / _ \ '__|
- | |___ >  <| |_) |  __/ | | \__ \  __/| || | | (_| | (__|   <  __/ |   
- |_____/_/\_\ .__/\___|_| |_|___/\___||_||_|  \__,_|\___|_|\_\___|_|   
-            |_|                                                        
-```
+<p align="center">
+  <img src="static/img/logonobg.png" alt="Expense Tracker Logo" width="180"/>
+</p>
+
 
 ## Overview
 A simple and intuitive expense tracking application that helps you monitor your spending habits and manage your budget effectively.
