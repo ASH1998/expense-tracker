@@ -130,7 +130,7 @@
     <div class="col-lg-8">
         <div class="card shadow-sm h-100">
             <div class="card-header bg-body d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Monthly Overview</h5>
+                <h5 class="card-title mb-0" id="overview-title">Monthly Overview</h5>
                 <div class="d-flex align-items-center gap-2">
                     <div class="input-group input-group-sm" style="width:auto;">
                         <select id="year-select" class="form-select bg-body text-body border-secondary"></select>
@@ -225,6 +225,7 @@
 
         const yearSelect = document.getElementById('year-select');
         const monthSelect = document.getElementById('month-select');
+        const overviewTitle = document.getElementById('overview-title');
 
         function populateYearSelect() {
             yearSelect.innerHTML = '';
@@ -348,6 +349,17 @@
             });
         }
 
+        function updateChartTitle() {
+            if (chartMode === 'monthly') {
+                const monthName = MONTH_NAMES[parseInt(selectedMonth, 10) - 1];
+                overviewTitle.textContent = `${monthName} ${selectedYear} Overview`;
+            } else if (chartMode === 'yearly') {
+                overviewTitle.textContent = `${selectedYear} Yearly Overview`;
+            } else {
+                overviewTitle.textContent = 'All-Time Overview';
+            }
+        }
+
         let chartMode = 'monthly';
         let chartData = getMonthlyChartData();
 
@@ -381,13 +393,9 @@
                     {
                         label: 'Savings',
                         data: chartData.savings,
-                        type: 'line',
-                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                        borderColor: 'rgba(0, 123, 255, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(0, 123, 255, 1)',
-                        pointRadius: 4,
-                        fill: true
+                        backgroundColor: 'rgba(0, 123, 255, 0.7)', // Change to bar color
+                        borderColor: 'rgba(0, 123, 255, 1)',     // Change to bar border color
+                        borderWidth: 1 // Match other bars
                     }
                 ]
             },
@@ -462,8 +470,9 @@
         }
         
         updateDropdownVisibility();
-        // Initial update for card headers
+        // Initial update for card headers and chart title
         updateCardHeaders('monthly', selectedMonth, selectedYear);
+        updateChartTitle();
         
         // Add event listener for monthSelect to update data when month changes
         monthSelect.addEventListener('change', function() {
@@ -478,6 +487,7 @@
                 monthlyChart.update();
                 updateMonthlyCards(selectedYear, selectedMonth);
             }
+            updateChartTitle();
         });
         
         document.querySelectorAll('[data-chart-period]').forEach(button => {
@@ -496,6 +506,8 @@
                 if (chartMode !== 'all') {
                     updateCardLabels(chartMode);
                 }
+
+                updateChartTitle();
 
                 if (chartMode === 'monthly') {
                     const data = getSingleMonthChartData(yearSelect.value, monthSelect.value);
@@ -581,15 +593,17 @@
                 // Update card headers when year changes in yearly view
                 updateCardHeaders('yearly', null, selectedYear);
             }
+            updateChartTitle();
         });
         
-        // Also update card headers when month changes
+        // Also update card headers and chart title when month changes
         monthSelect.addEventListener('change', function() {
             selectedMonth = this.value;
             // Update card headers with new month
             if (chartMode === 'monthly') {
                 updateCardHeaders('monthly', selectedMonth, selectedYear);
             }
+            updateChartTitle();
             // Rest of the existing month change code
             if (chartMode === 'monthly') {
                 const data = getSingleMonthChartData(selectedYear, selectedMonth);
