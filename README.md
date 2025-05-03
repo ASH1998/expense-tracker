@@ -29,6 +29,15 @@ A simple and intuitive expense tracking application that helps you monitor your 
 
 ---
 
+## Changelog
+
+The project follows [Semantic Versioning](https://semver.org/). View the full changelog:
+
+- [CHANGELOG.md](CHANGELOG.md) - Complete version history
+- **Current Version:** 0.1.0 (Pre-release) - Initial release with core features
+
+---
+
 ## Screenshots
 > ![Dashboard Screenshot](docs/images/dashboard.png)
 
