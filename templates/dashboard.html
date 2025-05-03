@@ -77,6 +77,53 @@
     </div>
 </div>
 
+<!-- Monthly Cards -->
+<div class="row g-4 mb-4" id="monthly-cards-row">
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-success text-white shadow-sm h-100" style="background-color: #4caf50 !important;">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Earnings (Month)</h6>
+                </div>
+                <h4 class="card-text fw-bold mt-2" id="monthly-earning">₹0.00</h4>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-danger text-white shadow-sm h-100" style="background-color: #f44336 !important;">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Spends (Month)</h6>
+                </div>
+                <h4 class="card-text fw-bold mt-2" id="monthly-spend">₹0.00</h4>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-info text-white shadow-sm h-100" style="background-color: #00bcd4 !important;">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Investments (Month)</h6>
+                </div>
+                <h4 class="card-text fw-bold mt-2" id="monthly-investment">₹0.00</h4>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-primary text-white shadow-sm h-100" style="background-color: #2196f3 !important;">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Savings (Month)</h6>
+                </div>
+                <h4 class="card-text fw-bold mt-2" id="monthly-savings">₹0.00</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Charts and Recent Transactions -->
 <div class="row g-4">
     <!-- Monthly Breakdown Chart -->
@@ -268,6 +315,19 @@
             };
         }
 
+        // --- Monthly Cards Update ---
+        function updateMonthlyCards(year, month) {
+            const ym = year + '-' + month;
+            const earning = monthlyData.Earning[ym] || 0;
+            const spend = monthlyData.Spend[ym] || 0;
+            const investment = monthlyData.Investment[ym] || 0;
+            const savings = earning - spend;
+            document.getElementById('monthly-earning').textContent = '₹' + earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('monthly-spend').textContent = '₹' + spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('monthly-investment').textContent = '₹' + investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('monthly-savings').textContent = '₹' + savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
         let chartMode = 'monthly';
         let chartData = getMonthlyChartData();
 
@@ -348,6 +408,9 @@
         let selectedMonth = monthSelect.options[monthSelect.options.length - 1]?.value || "01";
         monthSelect.value = selectedMonth;
 
+        // Initial update for monthly cards
+        updateMonthlyCards(selectedYear, selectedMonth);
+
         function updateDropdownVisibility() {
             if (chartMode === 'monthly') {
                 monthSelect.style.display = '';
@@ -379,6 +442,7 @@
                     monthlyChart.data.datasets[2].data = data.investments;
                     monthlyChart.data.datasets[3].data = data.savings;
                     monthlyChart.update();
+                    updateMonthlyCards(yearSelect.value, monthSelect.value);
                 } else if (chartMode === 'yearly') {
                     const data = getSingleYearChartData(yearSelect.value);
                     monthlyChart.data.labels = data.labels;
@@ -412,6 +476,7 @@
                 monthlyChart.data.datasets[2].data = data.investments;
                 monthlyChart.data.datasets[3].data = data.savings;
                 monthlyChart.update();
+                updateMonthlyCards(selectedYear, selectedMonth);
             } else if (chartMode === 'yearly') {
                 const data = getSingleYearChartData(selectedYear);
                 monthlyChart.data.labels = data.labels;
@@ -433,6 +498,7 @@
                 monthlyChart.data.datasets[2].data = data.investments;
                 monthlyChart.data.datasets[3].data = data.savings;
                 monthlyChart.update();
+                updateMonthlyCards(yearSelect.value, selectedMonth);
             }
         });
     });
