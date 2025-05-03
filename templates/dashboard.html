@@ -84,9 +84,16 @@
         <div class="card shadow-sm h-100">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Monthly Overview</h5>
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary active" data-chart-period="monthly">Monthly</button>
-                    <button type="button" class="btn btn-outline-primary" data-chart-period="yearly">Yearly</button>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm" style="width:auto;">
+                        <select id="year-select" class="form-select bg-body text-body border-secondary"></select>
+                        <select id="month-select" class="form-select bg-body text-body border-secondary ms-1"></select>
+                    </div>
+                    <div class="btn-group btn-group-sm ms-2">
+                        <button type="button" class="btn btn-outline-primary active" data-chart-period="monthly">Monthly</button>
+                        <button type="button" class="btn btn-outline-primary" data-chart-period="yearly">Yearly</button>
+                        <button type="button" class="btn btn-outline-primary" data-chart-period="all">All</button>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -160,53 +167,140 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Parse the monthly data from the server
         const monthlyData = JSON.parse('{{ monthly_data|safe }}');
-        
-        // Setup data for the chart
-        const months = Object.keys(Object.values(monthlyData)[0] || {}).sort();
-        const earnings = months.map(month => monthlyData.Earning[month] || 0);
-        const spends = months.map(month => monthlyData.Spend[month] || 0);
-        const investments = months.map(month => monthlyData.Investment[month] || 0);
-        const savings = months.map((month, i) => (monthlyData.Earning[month] || 0) - (monthlyData.Spend[month] || 0));
-        
-        // Format the month labels
-        const formattedMonths = months.map(month => {
-            const [year, monthNum] = month.split('-');
-            return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        });
-        
-        // Create monthly chart
+        let allMonths = Object.keys(Object.values(monthlyData)[0] || {}).sort();
+        let allYears = Array.from(new Set(allMonths.map(m => m.split('-')[0]))).sort();
+
+        const MONTH_NAMES = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        const yearSelect = document.getElementById('year-select');
+        const monthSelect = document.getElementById('month-select');
+
+        function populateYearSelect() {
+            yearSelect.innerHTML = '';
+            allYears.forEach(year => {
+                const opt = document.createElement('option');
+                opt.value = year;
+                opt.textContent = year;
+                yearSelect.appendChild(opt);
+            });
+        }
+
+        function populateMonthSelect(selectedYear) {
+            monthSelect.innerHTML = '';
+            const monthsForYear = allMonths
+                .filter(m => m.startsWith(selectedYear + '-'))
+                .map(m => m.split('-')[1]);
+            const uniqueMonths = Array.from(new Set(monthsForYear)).sort();
+            uniqueMonths.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = MONTH_NAMES[parseInt(m, 10) - 1];
+                monthSelect.appendChild(opt);
+            });
+        }
+
+        function getMonthLabel(ym) {
+            const [year, monthNum] = ym.split('-');
+            return MONTH_NAMES[parseInt(monthNum, 10) - 1] + ' ' + year;
+        }
+        function getSingleMonthChartData(year, month) {
+            const ym = year + '-' + month;
+            return {
+                labels: [getMonthLabel(ym)],
+                earnings: [monthlyData.Earning[ym] || 0],
+                spends: [monthlyData.Spend[ym] || 0],
+                investments: [monthlyData.Investment[ym] || 0],
+                savings: [(monthlyData.Earning[ym] || 0) - (monthlyData.Spend[ym] || 0)]
+            };
+        }
+        function getSingleYearChartData(year) {
+            let earnings = 0, spends = 0, investments = 0;
+            allMonths.forEach(ym => {
+                if (ym.startsWith(year + '-')) {
+                    earnings += monthlyData.Earning[ym] || 0;
+                    spends += monthlyData.Spend[ym] || 0;
+                    investments += monthlyData.Investment[ym] || 0;
+                }
+            });
+            return {
+                labels: [year],
+                earnings: [earnings],
+                spends: [spends],
+                investments: [investments],
+                savings: [earnings - spends]
+            };
+        }
+        function getMonthlyChartData() {
+            const months = allMonths;
+            const earnings = months.map(month => monthlyData.Earning[month] || 0);
+            const spends = months.map(month => monthlyData.Spend[month] || 0);
+            const investments = months.map(month => monthlyData.Investment[month] || 0);
+            const savings = months.map((month, i) => (monthlyData.Earning[month] || 0) - (monthlyData.Spend[month] || 0));
+            const formattedMonths = months.map(getMonthLabel);
+            return {
+                labels: formattedMonths,
+                earnings, spends, investments, savings
+            };
+        }
+        function getYearlyChartData() {
+            const yearlyMap = {};
+            allYears.forEach(year => {
+                yearlyMap[year] = {Earning: 0, Spend: 0, Investment: 0};
+            });
+            for (const type of ['Earning', 'Spend', 'Investment']) {
+                for (const ym in monthlyData[type]) {
+                    const [year, ] = ym.split('-');
+                    yearlyMap[year][type] += monthlyData[type][ym] || 0;
+                }
+            }
+            const years = allYears;
+            const earnings = years.map(year => yearlyMap[year].Earning || 0);
+            const spends = years.map(year => yearlyMap[year].Spend || 0);
+            const investments = years.map(year => yearlyMap[year].Investment || 0);
+            const savings = years.map((year, i) => (yearlyMap[year].Earning || 0) - (yearlyMap[year].Spend || 0));
+            return {
+                labels: years,
+                earnings, spends, investments, savings
+            };
+        }
+
+        let chartMode = 'monthly';
+        let chartData = getMonthlyChartData();
+
         const ctx = document.getElementById('monthlyChart').getContext('2d');
         const monthlyChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: formattedMonths,
+                labels: chartData.labels,
                 datasets: [
                     {
                         label: 'Earnings',
-                        data: earnings,
+                        data: chartData.earnings,
                         backgroundColor: 'rgba(40, 167, 69, 0.7)',
                         borderColor: 'rgba(40, 167, 69, 1)',
                         borderWidth: 1
                     },
                     {
                         label: 'Spends',
-                        data: spends,
+                        data: chartData.spends,
                         backgroundColor: 'rgba(220, 53, 69, 0.7)',
                         borderColor: 'rgba(220, 53, 69, 1)',
                         borderWidth: 1
                     },
                     {
                         label: 'Investments',
-                        data: investments,
+                        data: chartData.investments,
                         backgroundColor: 'rgba(23, 162, 184, 0.7)',
                         borderColor: 'rgba(23, 162, 184, 1)',
                         borderWidth: 1
                     },
                     {
                         label: 'Savings',
-                        data: savings,
+                        data: chartData.savings,
                         type: 'line',
                         backgroundColor: 'rgba(0, 123, 255, 0.2)',
                         borderColor: 'rgba(0, 123, 255, 1)',
@@ -246,20 +340,100 @@
                 }
             }
         });
-        
-        // Chart toggle buttons
+
+        populateYearSelect();
+        let selectedYear = allYears[allYears.length - 1];
+        yearSelect.value = selectedYear;
+        populateMonthSelect(selectedYear);
+        let selectedMonth = monthSelect.options[monthSelect.options.length - 1]?.value || "01";
+        monthSelect.value = selectedMonth;
+
+        function updateDropdownVisibility() {
+            if (chartMode === 'monthly') {
+                monthSelect.style.display = '';
+                yearSelect.style.display = '';
+            } else if (chartMode === 'yearly') {
+                monthSelect.style.display = 'none';
+                yearSelect.style.display = '';
+            } else {
+                monthSelect.style.display = 'none';
+                yearSelect.style.display = 'none';
+            }
+        }
+        updateDropdownVisibility();
+
         document.querySelectorAll('[data-chart-period]').forEach(button => {
             button.addEventListener('click', function() {
                 document.querySelectorAll('[data-chart-period]').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 this.classList.add('active');
-                
-                // Toggle between monthly and yearly view
-                // In a real implementation, we would update the chart data
-                // For now, we'll just show an alert
-                alert(`${this.dataset.chartPeriod.charAt(0).toUpperCase() + this.dataset.chartPeriod.slice(1)} view will be implemented.`);
+                chartMode = this.dataset.chartPeriod;
+                updateDropdownVisibility();
+
+                if (chartMode === 'monthly') {
+                    const data = getSingleMonthChartData(yearSelect.value, monthSelect.value);
+                    monthlyChart.data.labels = data.labels;
+                    monthlyChart.data.datasets[0].data = data.earnings;
+                    monthlyChart.data.datasets[1].data = data.spends;
+                    monthlyChart.data.datasets[2].data = data.investments;
+                    monthlyChart.data.datasets[3].data = data.savings;
+                    monthlyChart.update();
+                } else if (chartMode === 'yearly') {
+                    const data = getSingleYearChartData(yearSelect.value);
+                    monthlyChart.data.labels = data.labels;
+                    monthlyChart.data.datasets[0].data = data.earnings;
+                    monthlyChart.data.datasets[1].data = data.spends;
+                    monthlyChart.data.datasets[2].data = data.investments;
+                    monthlyChart.data.datasets[3].data = data.savings;
+                    monthlyChart.update();
+                } else {
+                    const data = getMonthlyChartData();
+                    monthlyChart.data.labels = data.labels;
+                    monthlyChart.data.datasets[0].data = data.earnings;
+                    monthlyChart.data.datasets[1].data = data.spends;
+                    monthlyChart.data.datasets[2].data = data.investments;
+                    monthlyChart.data.datasets[3].data = data.savings;
+                    monthlyChart.update();
+                }
             });
+        });
+
+        yearSelect.addEventListener('change', function() {
+            selectedYear = this.value;
+            populateMonthSelect(selectedYear);
+            selectedMonth = monthSelect.options[monthSelect.options.length - 1]?.value || "01";
+            monthSelect.value = selectedMonth;
+            if (chartMode === 'monthly') {
+                const data = getSingleMonthChartData(selectedYear, selectedMonth);
+                monthlyChart.data.labels = data.labels;
+                monthlyChart.data.datasets[0].data = data.earnings;
+                monthlyChart.data.datasets[1].data = data.spends;
+                monthlyChart.data.datasets[2].data = data.investments;
+                monthlyChart.data.datasets[3].data = data.savings;
+                monthlyChart.update();
+            } else if (chartMode === 'yearly') {
+                const data = getSingleYearChartData(selectedYear);
+                monthlyChart.data.labels = data.labels;
+                monthlyChart.data.datasets[0].data = data.earnings;
+                monthlyChart.data.datasets[1].data = data.spends;
+                monthlyChart.data.datasets[2].data = data.investments;
+                monthlyChart.data.datasets[3].data = data.savings;
+                monthlyChart.update();
+            }
+        });
+
+        monthSelect.addEventListener('change', function() {
+            selectedMonth = this.value;
+            if (chartMode === 'monthly') {
+                const data = getSingleMonthChartData(yearSelect.value, selectedMonth);
+                monthlyChart.data.labels = data.labels;
+                monthlyChart.data.datasets[0].data = data.earnings;
+                monthlyChart.data.datasets[1].data = data.spends;
+                monthlyChart.data.datasets[2].data = data.investments;
+                monthlyChart.data.datasets[3].data = data.savings;
+                monthlyChart.update();
+            }
         });
     });
 </script>
