@@ -1,0 +1,7 @@
+users: 
+  - id: '1' 
+    username: 'admin' 
+    password: 'secure_password'  # Replace with a strong password 
+  - id: '2' 
+    username: 'user' 
+    password: 'another_secure_password'  # Replace with a strong password 
