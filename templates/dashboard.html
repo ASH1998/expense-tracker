@@ -326,6 +326,26 @@
             document.getElementById('monthly-spend').textContent = '₹' + spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             document.getElementById('monthly-investment').textContent = '₹' + investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             document.getElementById('monthly-savings').textContent = '₹' + savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            
+            // Update card headers with specific month/year
+            updateCardHeaders('monthly', month, year);
+        }
+
+        // Function to update card headers with period information
+        function updateCardHeaders(mode, month, year) {
+            const monthName = month ? MONTH_NAMES[parseInt(month, 10) - 1] : '';
+            let periodText = '';
+            
+            if (mode === 'monthly') {
+                periodText = `${monthName} ${year}`;
+            } else if (mode === 'yearly') {
+                periodText = year;
+            }
+            
+            document.querySelectorAll('#monthly-cards-row .card-title').forEach(title => {
+                const type = title.textContent.split(' ')[0];
+                title.textContent = `${type} (${periodText})`;
+            });
         }
 
         let chartMode = 'monthly';
@@ -423,8 +443,43 @@
                 yearSelect.style.display = 'none';
             }
         }
-        updateDropdownVisibility();
 
+        function toggleMonthlyCards(show) {
+            const monthlyCardsRow = document.getElementById('monthly-cards-row');
+            if (show) {
+                monthlyCardsRow.style.display = '';
+            } else {
+                monthlyCardsRow.style.display = 'none';
+            }
+        }
+        
+        function updateCardLabels(period) {
+            if (period === 'monthly') {
+                updateCardHeaders('monthly', monthSelect.value, yearSelect.value);
+            } else if (period === 'yearly') {
+                updateCardHeaders('yearly', null, yearSelect.value);
+            }
+        }
+        
+        updateDropdownVisibility();
+        // Initial update for card headers
+        updateCardHeaders('monthly', selectedMonth, selectedYear);
+        
+        // Add event listener for monthSelect to update data when month changes
+        monthSelect.addEventListener('change', function() {
+            selectedMonth = this.value;
+            if (chartMode === 'monthly') {
+                const data = getSingleMonthChartData(selectedYear, selectedMonth);
+                monthlyChart.data.labels = data.labels;
+                monthlyChart.data.datasets[0].data = data.earnings;
+                monthlyChart.data.datasets[1].data = data.spends;
+                monthlyChart.data.datasets[2].data = data.investments;
+                monthlyChart.data.datasets[3].data = data.savings;
+                monthlyChart.update();
+                updateMonthlyCards(selectedYear, selectedMonth);
+            }
+        });
+        
         document.querySelectorAll('[data-chart-period]').forEach(button => {
             button.addEventListener('click', function() {
                 document.querySelectorAll('[data-chart-period]').forEach(btn => {
@@ -433,6 +488,14 @@
                 this.classList.add('active');
                 chartMode = this.dataset.chartPeriod;
                 updateDropdownVisibility();
+
+                // Show monthly cards for monthly and yearly views, hide for 'all'
+                toggleMonthlyCards(chartMode !== 'all');
+                
+                // Update card labels based on current view
+                if (chartMode !== 'all') {
+                    updateCardLabels(chartMode);
+                }
 
                 if (chartMode === 'monthly') {
                     const data = getSingleMonthChartData(yearSelect.value, monthSelect.value);
@@ -451,6 +514,22 @@
                     monthlyChart.data.datasets[2].data = data.investments;
                     monthlyChart.data.datasets[3].data = data.savings;
                     monthlyChart.update();
+                    
+                    // Update monthly cards to show yearly totals
+                    const yearTotals = {
+                        earning: data.earnings[0],
+                        spend: data.spends[0],
+                        investment: data.investments[0],
+                        savings: data.savings[0]
+                    };
+                    
+                    document.getElementById('monthly-earning').textContent = '₹' + yearTotals.earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                    document.getElementById('monthly-spend').textContent = '₹' + yearTotals.spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                    document.getElementById('monthly-investment').textContent = '₹' + yearTotals.investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                    document.getElementById('monthly-savings').textContent = '₹' + yearTotals.savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                    
+                    // Update headers for yearly view
+                    updateCardHeaders('yearly', null, selectedYear);
                 } else {
                     const data = getMonthlyChartData();
                     monthlyChart.data.labels = data.labels;
@@ -485,20 +564,42 @@
                 monthlyChart.data.datasets[2].data = data.investments;
                 monthlyChart.data.datasets[3].data = data.savings;
                 monthlyChart.update();
+                
+                // Update monthly cards with yearly data when changing year in yearly view
+                const yearTotals = {
+                    earning: data.earnings[0],
+                    spend: data.spends[0],
+                    investment: data.investments[0],
+                    savings: data.savings[0]
+                };
+                
+                document.getElementById('monthly-earning').textContent = '₹' + yearTotals.earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                document.getElementById('monthly-spend').textContent = '₹' + yearTotals.spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                document.getElementById('monthly-investment').textContent = '₹' + yearTotals.investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                document.getElementById('monthly-savings').textContent = '₹' + yearTotals.savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                
+                // Update card headers when year changes in yearly view
+                updateCardHeaders('yearly', null, selectedYear);
             }
         });
-
+        
+        // Also update card headers when month changes
         monthSelect.addEventListener('change', function() {
             selectedMonth = this.value;
+            // Update card headers with new month
             if (chartMode === 'monthly') {
-                const data = getSingleMonthChartData(yearSelect.value, selectedMonth);
+                updateCardHeaders('monthly', selectedMonth, selectedYear);
+            }
+            // Rest of the existing month change code
+            if (chartMode === 'monthly') {
+                const data = getSingleMonthChartData(selectedYear, selectedMonth);
                 monthlyChart.data.labels = data.labels;
                 monthlyChart.data.datasets[0].data = data.earnings;
                 monthlyChart.data.datasets[1].data = data.spends;
                 monthlyChart.data.datasets[2].data = data.investments;
                 monthlyChart.data.datasets[3].data = data.savings;
                 monthlyChart.update();
-                updateMonthlyCards(yearSelect.value, selectedMonth);
+                updateMonthlyCards(selectedYear, selectedMonth);
             }
         });
     });
