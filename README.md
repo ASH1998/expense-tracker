@@ -24,19 +24,24 @@ A simple and intuitive expense tracking application that helps you monitor your 
 - **Settings**: Manage categories, currency, and month start date.
 - **Import/Export**: Backup or restore data in CSV/JSON formats.
 - **Responsive UI**: Works on desktop and mobile devices.
-- **Theme Toggle**: Light/Dark mode support.
+- **Dark Mode**: Full dark theme support for comfortable viewing in low-light environments.
 - **No Cloud Dependency**: All data is stored locally.
 
 ---
 
+## Changelog
+
+The project follows [Semantic Versioning](https://semver.org/). View the full changelog:
+
+- [CHANGELOG.md](CHANGELOG.md) - Complete version history
+- **Current Version:** 0.1.0 (Pre-release) - Initial release with core features
+
+---
+
 ## Screenshots
+> ![Dashboard Screenshot](docs/images/dashboard.png)
 
-> _Add screenshots here if available, e.g.:_
->
-> ![Dashboard Screenshot](docs/dashboard.png)
-> ![Expense Table Screenshot](docs/expenses.png)
-
-
+**[View all screenshots](docs/show.md)**
 
 ## Getting Started
 
@@ -59,6 +64,25 @@ pip install -r requirements.txt
 
 ### 3. Configure Environment
 
+You can configure the application in two ways:
+
+#### Option A: Using Initialization Scripts
+
+The repository includes initialization scripts for different operating systems that will set up the required configuration files with secure defaults:
+
+- **Windows:** Run `scripts\init_windows.bat` from the repository root
+- **Linux:** Run `bash scripts/init_unix.sh` from the repository root
+- **macOS:** Run `bash scripts/init_macos.sh` from the repository root
+
+These scripts will create:
+- A `.env` file with a randomly generated secure key
+- A default `config.yaml` with an admin user (username: `admin`, password: `admin123`)
+- A `data` directory if needed
+
+**Important:** Remember to change the default password in `config.yaml` after initialization.
+
+#### Option B: Manual Configuration
+- Go to `scripts` directory
 - Copy `.env.example` to `.env` and set your `SECRET_KEY`.
 - Edit `config.yaml` to add users if needed.
 
@@ -130,11 +154,11 @@ expense-tracker/
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please check out our [Contributing Guide](CONTRIBUTING.md) for details on how to:
 
-1. Fork the repository.
-2. Create a new branch for your feature/fix.
-3. Submit a pull request with a clear description.
+1. Fork the repository
+2. Create a new branch for your feature/fix
+3. Submit a pull request with a clear description
 
 ---
 
