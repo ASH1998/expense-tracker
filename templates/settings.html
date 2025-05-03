@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="display-6 fw-bold"><i class="fas fa-cog me-2"></i>Settings</h2>
+        <p class="text-muted">Configure your expense tracker preferences</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Category Settings -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-tags me-2"></i>Category Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings') }}">
+                    <input type="hidden" name="action" value="save_categories">
+                    <div class="mb-3">
+                        <label class="form-label">Manage Categories</label>
+                        <div id="categories-container">
+                            {% for category in settings.categories %}
+                            <div class="input-group mb-2 category-group">
+                                <input type="text" class="form-control" name="categories[]" value="{{ category }}" required>
+                                <button type="button" class="btn btn-outline-danger remove-category">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" id="add-category" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="fas fa-plus me-1"></i>Add New Category
+                        </button>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Categories
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Other Settings -->
+    <div class="col-lg-6">
+        <div class="row g-4">
+            <!-- Currency Settings -->
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0"><i class="fas fa-rupee-sign me-2"></i>Currency Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('settings') }}">
+                            <input type="hidden" name="action" value="save_currency">
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">Select Currency</label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="INR (₹)" {% if settings.currency == 'INR (₹)' %}selected{% endif %}>Indian Rupee (₹)</option>
+                                    <option value="USD ($)" {% if settings.currency == 'USD ($)' %}selected{% endif %}>US Dollar ($)</option>
+                                    <option value="EUR (€)" {% if settings.currency == 'EUR (€)' %}selected{% endif %}>Euro (€)</option>
+                                    <option value="GBP (£)" {% if settings.currency == 'GBP (£)' %}selected{% endif %}>British Pound (£)</option>
+                                </select>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Save Currency
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Date Settings -->
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0"><i class="fas fa-calendar-alt me-2"></i>Start Date Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('settings') }}">
+                            <input type="hidden" name="action" value="save_start_date">
+                            <div class="mb-3">
+                                <label for="start_date" class="form-label">Month Start Day</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    <select class="form-select" id="start_date" name="start_date">
+                                        {% for i in range(1, 32) %}
+                                        <option value="{{ i }}" {% if settings.start_date == i %}selected{% endif %}>{{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-text">Set the day of month when your financial month begins</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Save Start Date
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add new category field
+        document.getElementById('add-category').addEventListener('click', function() {
+            const container = document.getElementById('categories-container');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'input-group mb-2 category-group';
+            newGroup.innerHTML = `
+                <input type="text" class="form-control" name="categories[]" required>
+                <button type="button" class="btn btn-outline-danger remove-category">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newGroup);
+            
+            // Focus the new input field
+            const newInput = newGroup.querySelector('input');
+            newInput.focus();
+        });
+        
+        // Remove category field
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-category')) {
+                const button = e.target.closest('.remove-category');
+                const categoryGroup = button.closest('.category-group');
+                categoryGroup.remove();
+            }
+        });
+    });
+</script>
+{% endblock %}

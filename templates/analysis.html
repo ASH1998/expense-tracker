@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        position: sticky;
+        top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Store the JSON data in hidden elements to access them in JavaScript -->
+<script type="application/json" id="category-data">{{ category_data|safe }}</script>
+<script type="application/json" id="monthly-trends">{{ monthly_trends|safe }}</script>
+<script type="application/json" id="yearly-trends">{{ yearly_trends|safe }}</script>
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="display-6 fw-bold"><i class="fas fa-chart-line me-2"></i>Financial Analysis</h2>
+        <p class="text-muted">Analyze your spending patterns and financial trends</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Filter Panel -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm filter-card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
+            </div>
+            <div class="card-body">
+                <form id="filter-form">
+                    <!-- Date Range -->
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                            <input type="date" class="form-control" id="start-date" name="start_date">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                            <input type="date" class="form-control" id="end-date" name="end_date">
+                        </div>
+                    </div>
+                    
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for category in settings.categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Type -->
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Type</label>
+                        <select class="form-select" id="type" name="type">
+                            <option value="">All Types</option>
+                            <option value="Earning">Earning</option>
+                            <option value="Spend">Spend</option>
+                            <option value="Investment">Investment</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Preset Periods -->
+                    <div class="mb-3">
+                        <label class="form-label">Quick Period</label>
+                        <div class="d-grid gap-2">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary period-btn" data-period="month">This Month</button>
+                                <button type="button" class="btn btn-outline-primary period-btn" data-period="quarter">This Quarter</button>
+                                <button type="button" class="btn btn-outline-primary period-btn" data-period="year">This Year</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts and Analysis -->
+    <div class="col-lg-9">
+        <!-- Monthly Trend Charts -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Trends</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyTrendChart" height="250"></canvas>
+            </div>
+        </div>
+        
+        <!-- Category Breakdown -->
+        <div class="row g-4">
+            <!-- Pie Chart -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Spend by Category</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="categoryPieChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Yearly Trend Chart -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Yearly Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="yearlyTrendChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse the data from the server
+        const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+        const monthlyTrends = JSON.parse(document.getElementById('monthly-trends').textContent);
+        const yearlyTrends = JSON.parse(document.getElementById('yearly-trends').textContent);
+        
+        // Set up category pie chart
+        const categoryLabels = Object.keys(categoryData || {});
+        const categoryValues = Object.values(categoryData || {});
+        const categoryColors = generateColors(categoryLabels.length);
+        
+        const ctxPie = document.getElementById('categoryPieChart').getContext('2d');
+        const categoryPieChart = new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryValues,
+                    backgroundColor: categoryColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce(function(acc, data) { return acc + data; }, 0);
+                                const percentage = ((value * 100) / total).toFixed(1);
+                                return label + ': ₹' + value.toLocaleString() + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Set up monthly trend chart
+        const monthLabels = Object.keys(monthlyTrends || {}).sort();
+        const monthlyEarnings = monthLabels.map(function(month) {
+            return monthlyTrends[month] && monthlyTrends[month]['Earning'] ? monthlyTrends[month]['Earning'] : 0;
+        });
+        const monthlySpends = monthLabels.map(function(month) {
+            return monthlyTrends[month] && monthlyTrends[month]['Spend'] ? monthlyTrends[month]['Spend'] : 0;
+        });
+        const monthlyInvestments = monthLabels.map(function(month) {
+            return monthlyTrends[month] && monthlyTrends[month]['Investment'] ? monthlyTrends[month]['Investment'] : 0;
+        });
+        const monthlySavings = monthLabels.map(function(month) {
+            const earning = monthlyTrends[month] && monthlyTrends[month]['Earning'] ? monthlyTrends[month]['Earning'] : 0;
+            const spend = monthlyTrends[month] && monthlyTrends[month]['Spend'] ? monthlyTrends[month]['Spend'] : 0;
+            return earning - spend;
+        });
+        
+        // Format the month labels
+        const formattedMonths = monthLabels.map(function(month) {
+            const parts = month.split('-');
+            const year = parts[0];
+            const monthNum = parts[1];
+            return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        });
+        
+        const ctxMonthly = document.getElementById('monthlyTrendChart').getContext('2d');
+        const monthlyTrendChart = new Chart(ctxMonthly, {
+            type: 'bar',
+            data: {
+                labels: formattedMonths,
+                datasets: [
+                    {
+                        label: 'Earnings',
+                        data: monthlyEarnings,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1,
+                        order: 1
+                    },
+                    {
+                        label: 'Spends',
+                        data: monthlySpends,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'Investments',
+                        data: monthlyInvestments,
+                        backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 1,
+                        order: 3
+                    },
+                    {
+                        label: 'Savings',
+                        data: monthlySavings,
+                        type: 'line',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(0, 123, 255, 1)',
+                        pointRadius: 4,
+                        fill: true,
+                        order: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '₹' + context.parsed.y.toLocaleString();
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Set up yearly trend chart
+        const yearLabels = Object.keys(yearlyTrends || {}).sort();
+        const yearlyEarnings = yearLabels.map(function(year) {
+            return yearlyTrends[year] && yearlyTrends[year]['Earning'] ? yearlyTrends[year]['Earning'] : 0;
+        });
+        const yearlySpends = yearLabels.map(function(year) {
+            return yearlyTrends[year] && yearlyTrends[year]['Spend'] ? yearlyTrends[year]['Spend'] : 0;
+        });
+        const yearlyInvestments = yearLabels.map(function(year) {
+            return yearlyTrends[year] && yearlyTrends[year]['Investment'] ? yearlyTrends[year]['Investment'] : 0;
+        });
+        const yearlySavings = yearLabels.map(function(year) {
+            const earning = yearlyTrends[year] && yearlyTrends[year]['Earning'] ? yearlyTrends[year]['Earning'] : 0;
+            const spend = yearlyTrends[year] && yearlyTrends[year]['Spend'] ? yearlyTrends[year]['Spend'] : 0;
+            return earning - spend;
+        });
+        
+        const ctxYearly = document.getElementById('yearlyTrendChart').getContext('2d');
+        const yearlyTrendChart = new Chart(ctxYearly, {
+            type: 'line',
+            data: {
+                labels: yearLabels,
+                datasets: [
+                    {
+                        label: 'Earnings',
+                        data: yearlyEarnings,
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(40, 167, 69, 1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Spends',
+                        data: yearlySpends,
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(220, 53, 69, 1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Investments',
+                        data: yearlyInvestments,
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(23, 162, 184, 1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Savings',
+                        data: yearlySavings,
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(0, 123, 255, 1)',
+                        pointRadius: 5,
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '₹' + context.parsed.y.toLocaleString();
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Helper function to generate colors
+        function generateColors(count) {
+            const colors = [
+                '#4dc9f6', '#f67019', '#f53794', '#537bc4', '#acc236', '#166a8f',
+                '#00a950', '#58595b', '#8549ba', '#e6194b', '#3cb44b', '#ffe119',
+                '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c',
+                '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000'
+            ];
+            
+            // If we have more categories than colors, repeat colors
+            if (count > colors.length) {
+                const multiplier = Math.ceil(count / colors.length);
+                const repeatedColors = [];
+                for (let i = 0; i < multiplier; i++) {
+                    repeatedColors.push.apply(repeatedColors, colors);
+                }
+                return repeatedColors.slice(0, count);
+            }
+            
+            return colors.slice(0, count);
+        }
+        
+        // Period filter buttons
+        document.querySelectorAll('.period-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const now = new Date();
+                const endDate = now.toISOString().slice(0, 10);
+                let startDate;
+                
+                switch(this.dataset.period) {
+                    case 'month':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+                        break;
+                    case 'quarter':
+                        const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+                        startDate = new Date(now.getFullYear(), quarterMonth, 1).toISOString().slice(0, 10);
+                        break;
+                    case 'year':
+                        startDate = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+                        break;
+                }
+                
+                document.getElementById('start-date').value = startDate;
+                document.getElementById('end-date').value = endDate;
+            });
+        });
+        
+        // Filter form submission
+        document.getElementById('filter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // In a real app, we would reload the data based on filters
+            // For now, we'll just show an alert
+            alert('Filters will be applied in the complete implementation');
+        });
+    });
+</script>
+{% endblock %}

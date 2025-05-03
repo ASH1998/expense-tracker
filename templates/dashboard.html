@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="display-6 fw-bold"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+        <p class="text-muted">Overview of your financial situation</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <!-- Earnings Card -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-success text-white shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Total Earnings</h6>
+                    <div class="icon-bg rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="fas fa-coins fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="card-text fw-bold">₹{{ "{:,.2f}".format(earnings) }}</h3>
+                <p class="card-text text-white-50 mt-auto"><small>All time earnings</small></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Spends Card -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-danger text-white shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Total Spends</h6>
+                    <div class="icon-bg rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="fas fa-shopping-cart fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="card-text fw-bold">₹{{ "{:,.2f}".format(spends) }}</h3>
+                <p class="card-text text-white-50 mt-auto"><small>All time expenses</small></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Investments Card -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-info text-white shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Total Investments</h6>
+                    <div class="icon-bg rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="fas fa-chart-line fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="card-text fw-bold">₹{{ "{:,.2f}".format(investments) }}</h3>
+                <p class="card-text text-white-50 mt-auto"><small>All time investments</small></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Savings Card -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 bg-primary text-white shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">Total Savings</h6>
+                    <div class="icon-bg rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="fas fa-piggy-bank fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="card-text fw-bold">₹{{ "{:,.2f}".format(savings) }}</h3>
+                <p class="card-text text-white-50 mt-auto"><small>Earnings - Spends</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Recent Transactions -->
+<div class="row g-4">
+    <!-- Monthly Breakdown Chart -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Monthly Overview</h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary active" data-chart-period="monthly">Monthly</button>
+                    <button type="button" class="btn btn-outline-primary" data-chart-period="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Transactions -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Latest Transactions</h5>
+                <a href="{{ url_for('manage_expenses') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>Add New
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if latest_records %}
+                                {% for record in latest_records %}
+                                <tr>
+                                    <td>
+                                        {% if record.date is string %}
+                                            {{ record.date }}
+                                        {% else %}
+                                            {{ record.date.strftime('%d %b, %Y') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.type == 'Earning' %}
+                                            <span class="badge bg-success">{{ record.type }}</span>
+                                        {% elif record.type == 'Spend' %}
+                                            <span class="badge bg-danger">{{ record.type }}</span>
+                                        {% elif record.type == 'Investment' %}
+                                            <span class="badge bg-info">{{ record.type }}</span>
+                                        {% endif %}
+                                        <small class="d-block text-muted">{{ record.category }}</small>
+                                    </td>
+                                    <td class="fw-bold {% if record.type == 'Earning' %}text-success{% elif record.type == 'Spend' %}text-danger{% elif record.type == 'Investment' %}text-info{% endif %}">
+                                        {% if record.type == 'Earning' %}+{% elif record.type == 'Spend' %}-{% endif %}₹{{ "{:,.2f}".format(record.amount) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4">No transactions found</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-light text-center">
+                <a href="{{ url_for('manage_expenses') }}" class="text-decoration-none">View All Transactions</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse the monthly data from the server
+        const monthlyData = JSON.parse('{{ monthly_data|safe }}');
+        
+        // Setup data for the chart
+        const months = Object.keys(Object.values(monthlyData)[0] || {}).sort();
+        const earnings = months.map(month => monthlyData.Earning[month] || 0);
+        const spends = months.map(month => monthlyData.Spend[month] || 0);
+        const investments = months.map(month => monthlyData.Investment[month] || 0);
+        const savings = months.map((month, i) => (monthlyData.Earning[month] || 0) - (monthlyData.Spend[month] || 0));
+        
+        // Format the month labels
+        const formattedMonths = months.map(month => {
+            const [year, monthNum] = month.split('-');
+            return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        });
+        
+        // Create monthly chart
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        const monthlyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: formattedMonths,
+                datasets: [
+                    {
+                        label: 'Earnings',
+                        data: earnings,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Spends',
+                        data: spends,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Investments',
+                        data: investments,
+                        backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Savings',
+                        data: savings,
+                        type: 'line',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(0, 123, 255, 1)',
+                        pointRadius: 4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '₹' + context.parsed.y.toLocaleString();
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Chart toggle buttons
+        document.querySelectorAll('[data-chart-period]').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('[data-chart-period]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Toggle between monthly and yearly view
+                // In a real implementation, we would update the chart data
+                // For now, we'll just show an alert
+                alert(`${this.dataset.chartPeriod.charAt(0).toUpperCase() + this.dataset.chartPeriod.slice(1)} view will be implemented.`);
+            });
+        });
+    });
+</script>
+{% endblock %}

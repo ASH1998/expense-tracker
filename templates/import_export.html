@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Import/Export Data{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="display-6 fw-bold"><i class="fas fa-file-import me-2"></i>Import/Export Data</h2>
+        <p class="text-muted">Backup, restore, or migrate your financial records</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Export Options -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-file-export me-2"></i>Export Data</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Export your expense data in different formats for backup or analysis in other tools.</p>
+                
+                <div class="row g-3">
+                    <!-- Export CSV -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="display-3 mb-3 text-primary">
+                                    <i class="fas fa-file-csv"></i>
+                                </div>
+                                <h5 class="card-title">CSV Format</h5>
+                                <p class="card-text small text-muted">Compatible with Excel, Google Sheets, etc.</p>
+                                <form method="POST" action="{{ url_for('import_export') }}">
+                                    <input type="hidden" name="action" value="export_csv">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-download me-1"></i>Export CSV
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Export JSON -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="display-3 mb-3 text-primary">
+                                    <i class="fas fa-file-code"></i>
+                                </div>
+                                <h5 class="card-title">JSON Format</h5>
+                                <p class="card-text small text-muted">Compatible with web applications and APIs</p>
+                                <form method="POST" action="{{ url_for('import_export') }}">
+                                    <input type="hidden" name="action" value="export_json">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-download me-1"></i>Export JSON
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="alert alert-info mb-0 p-2 small">
+                    <i class="fas fa-info-circle me-1"></i> Data is exported with all your transaction history.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import Options -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-file-import me-2"></i>Import Data</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Import expense data from CSV or JSON files. Make sure the file format matches the expected structure.</p>
+                
+                <div class="row g-3">
+                    <!-- Import CSV -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-file-csv me-2"></i>Import CSV</h5>
+                                <p class="card-text small text-muted">Required columns: date, type, category, amount, description</p>
+                                <form method="POST" action="{{ url_for('import_export') }}" enctype="multipart/form-data">
+                                    <input type="hidden" name="action" value="import_csv">
+                                    <div class="mb-3">
+                                        <input class="form-control" type="file" id="csv-file" name="file" accept=".csv">
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-upload me-1"></i>Import
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Import JSON -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-file-code me-2"></i>Import JSON</h5>
+                                <p class="card-text small text-muted">Must match ExpenseTracker JSON format</p>
+                                <form method="POST" action="{{ url_for('import_export') }}" enctype="multipart/form-data">
+                                    <input type="hidden" name="action" value="import_json">
+                                    <div class="mb-3">
+                                        <input class="form-control" type="file" id="json-file" name="file" accept=".json">
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-upload me-1"></i>Import
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="alert alert-warning mb-0 p-2 small">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Importing data will replace your existing records. Export your data first as a backup.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sample Format Cards -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>File Format Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>CSV Format Example:</h6>
+                        <pre class="bg-light p-3 rounded">
+id,date,type,category,amount,description
+1,2025-05-01,Earning,Income,50000,Monthly Salary
+2,2025-05-05,Spend,Rent,15000,Monthly Rent
+3,2025-05-10,Spend,Groceries,3500,Weekly groceries
+4,2025-05-15,Investment,Stocks,10000,Stock investment
+</pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>JSON Format Example:</h6>
+                        <pre class="bg-light p-3 rounded">
+[
+  {
+    "id": 1,
+    "date": "2025-05-01",
+    "type": "Earning",
+    "category": "Income",
+    "amount": 50000,
+    "description": "Monthly Salary"
+  },
+  {
+    "id": 2,
+    "date": "2025-05-05",
+    "type": "Spend",
+    "category": "Rent",
+    "amount": 15000,
+    "description": "Monthly Rent"
+  }
+]</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
