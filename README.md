@@ -12,6 +12,12 @@
 ## Overview
 A simple and intuitive expense tracking application that helps you monitor your spending habits and manage your budget effectively.
 
+## Why was this needed?
+
+1. **I don't trust expense tracker apps:** Most commercial apps store your sensitive financial data in the cloud, which I am not comfortable with.
+2. **Open source alternatives were lacking:** Projects like Expense Owl and others on GitHub didn't have the features I needed, especially the ability to view yearly trends and breakdowns.
+3. **A vibe coding experiment:** As a Machine Learning Engineer with limited frontend experience, I wanted to see how far I could go building a full-stack app using AI assistance and vibe-driven coding.
+
 ## Features
 
 - **User Authentication**: Secure login/logout with Flask-Login.
