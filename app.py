@@ -156,7 +156,7 @@ def login():
         else:
             flash('Invalid username or password')
     
-    return render_template('login.html')
+    return render_template('login.html', current_year=datetime.now().year)
 
 @app.route('/logout')
 @login_required
@@ -203,7 +203,8 @@ def dashboard():
                           investments=investments, savings=savings,
                           latest_records=latest_records_list,
                           monthly_data=json.dumps(monthly_data),
-                          settings=settings)
+                          settings=settings,
+                          current_year=datetime.now().year)
 
 @app.route('/analysis')
 @login_required
@@ -234,7 +235,8 @@ def analysis():
                           category_data=json.dumps(category_data),
                           monthly_trends=json.dumps(monthly_trends_dict),
                           yearly_trends=json.dumps(yearly_trends_dict),
-                          settings=settings)
+                          settings=settings,
+                          current_year=datetime.now().year)
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -536,7 +538,7 @@ def profile():
 
 @app.route('/contact')
 def contact():
-    return render_template('contact.html')
+    return render_template('contact.html', current_year=datetime.now().year)
 
 if __name__ == '__main__':
     ttrack = r"""
