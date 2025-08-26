@@ -62,16 +62,21 @@
     
     <!-- Savings Card -->
     <div class="col-md-6 col-lg-3">
-        <div class="card border-0 bg-primary text-white shadow-sm h-100">
+        <div class="card border-0 bg-primary text-white shadow-sm h-100" id="savings-card" style="cursor: pointer;" onclick="toggleSavingsView()">
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="card-title mb-0">Total Savings</h6>
+                    <h6 class="card-title mb-0" id="savings-title">Total Savings</h6>
                     <div class="icon-bg rounded-circle d-flex align-items-center justify-content-center">
-                        <i class="fas fa-piggy-bank fa-lg"></i>
+                        <i class="fas fa-piggy-bank fa-lg" id="savings-icon"></i>
                     </div>
                 </div>
-                <h3 class="card-text fw-bold">₹{{ "{:,.2f}".format(savings) }}</h3>
-                <p class="card-text text-white-50 mt-auto"><small>Earnings - Spends - Investments</small></p>
+                <h3 class="card-text fw-bold" id="savings-amount">₹{{ "{:,.2f}".format(savings) }}</h3>
+                <p class="card-text text-white-50 mt-auto" id="savings-description">
+                    <small>Earnings - Spends - Investments</small>
+                </p>
+                <p class="card-text text-white-50 mt-1">
+                    <small><i class="fas fa-mouse-pointer me-1"></i>Click to toggle view</small>
+                </p>
             </div>
         </div>
     </div>
@@ -113,12 +118,18 @@
     </div>
     
     <div class="col-md-6 col-lg-3">
-        <div class="card border-0 bg-primary text-white shadow-sm h-100" style="background-color: #2196f3 !important;">
+        <div class="card border-0 bg-primary text-white shadow-sm h-100 clickable-card" style="background-color: #2196f3 !important; cursor: pointer;" onclick="toggleMonthlySavingsView()">
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">Savings (Month)</h6>
+                    <h6 class="card-title mb-0" id="monthly-savings-title">Savings (Month)</h6>
                 </div>
-                <h4 class="card-text fw-bold mt-2" id="monthly-savings">₹0.00</h4>
+                <h4 class="card-text fw-bold mt-2" id="monthly-savings-amount">₹{{ "{:,.2f}".format(current_monthly_savings|default(0)) }}</h4>
+                <small class="text-white-50 mt-1">
+                    <span id="monthly-savings-description">Earnings - Spends - Investments</span>
+                </small>
+                <small class="text-white-50 mt-1">
+                    💡 Click to toggle view
+                </small>
             </div>
         </div>
     </div>
@@ -186,11 +197,13 @@
                                             <span class="badge bg-danger">{{ record.type }}</span>
                                         {% elif record.type == 'Investment' %}
                                             <span class="badge bg-info">{{ record.type }}</span>
+                                        {% elif record.type == 'Savings' %}
+                                            <span class="badge bg-primary">{{ record.type }}</span>
                                         {% endif %}
                                         <small class="d-block text-muted">{{ record.category }}</small>
                                     </td>
-                                    <td class="fw-bold {% if record.type == 'Earning' %}text-success{% elif record.type == 'Spend' %}text-danger{% elif record.type == 'Investment' %}text-info{% endif %}">
-                                        {% if record.type == 'Earning' %}+{% elif record.type == 'Spend' %}-{% endif %}₹{{ "{:,.2f}".format(record.amount) }}
+                                    <td class="fw-bold {% if record.type == 'Earning' %}text-success{% elif record.type == 'Spend' %}text-danger{% elif record.type == 'Investment' %}text-info{% elif record.type == 'Savings' %}text-primary{% endif %}">
+                                        {% if record.type == 'Earning' %}+{% elif record.type == 'Spend' %}-{% elif record.type == 'Savings' %}+{% endif %}₹{{ "{:,.2f}".format(record.amount) }}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -298,7 +311,7 @@
             allYears.forEach(year => {
                 yearlyMap[year] = {Earning: 0, Spend: 0, Investment: 0};
             });
-            for (const type of ['Earning', 'Spend', 'Investment']) {
+            for (const type of ['Earning', 'Spend', 'Investment', 'Savings']) {
                 for (const ym in monthlyData[type]) {
                     const [year, ] = ym.split('-');
                     yearlyMap[year][type] += monthlyData[type][ym] || 0;
@@ -468,6 +481,11 @@
         // Add event listener for monthSelect to update data when month changes
         monthSelect.addEventListener('change', function() {
             selectedMonth = this.value;
+            // Update card headers with new month
+            if (chartMode === 'monthly') {
+                updateCardHeaders('monthly', selectedMonth, selectedYear);
+            }
+            // Update chart and cards when month changes
             if (chartMode === 'monthly') {
                 const data = getSingleMonthChartData(selectedYear, selectedMonth);
                 monthlyChart.data.labels = data.labels;
@@ -582,26 +600,62 @@
                 updateCardHeaders('yearly', null, selectedYear);
             }
         });
-        
-        // Also update card headers when month changes
-        monthSelect.addEventListener('change', function() {
-            selectedMonth = this.value;
-            // Update card headers with new month
-            if (chartMode === 'monthly') {
-                updateCardHeaders('monthly', selectedMonth, selectedYear);
-            }
-            // Rest of the existing month change code
-            if (chartMode === 'monthly') {
-                const data = getSingleMonthChartData(selectedYear, selectedMonth);
-                monthlyChart.data.labels = data.labels;
-                monthlyChart.data.datasets[0].data = data.earnings;
-                monthlyChart.data.datasets[1].data = data.spends;
-                monthlyChart.data.datasets[2].data = data.investments;
-                monthlyChart.data.datasets[3].data = data.savings;
-                monthlyChart.update();
-                updateMonthlyCards(selectedYear, selectedMonth);
-            }
-        });
     });
+    
+    // Toggle between Savings and Cash in Hand view
+    // (Jinja values wrapped in strings so the unrendered template is valid JS for the editor/linter)
+    let showingCashInHand = false;
+    const savingsAmount = parseFloat("{{ savings|float }}") || 0;
+    const cashInHandAmount = parseFloat("{{ cash_in_hand|float }}") || 0;
+    
+    function toggleSavingsView() {
+        const titleElement = document.getElementById('savings-title');
+        const amountElement = document.getElementById('savings-amount');
+        const descriptionElement = document.getElementById('savings-description');
+        const iconElement = document.getElementById('savings-icon');
+        
+        if (!showingCashInHand) {
+            // Switch to Cash in Hand view
+            titleElement.textContent = 'Cash in Hand';
+            amountElement.textContent = '₹' + cashInHandAmount.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            descriptionElement.innerHTML = '<small>Earnings - Spends - Investments - Savings</small>';
+            iconElement.className = 'fas fa-wallet fa-lg';
+            showingCashInHand = true;
+        } else {
+            // Switch back to Savings view
+            titleElement.textContent = 'Total Savings';
+            amountElement.textContent = '₹' + savingsAmount.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            descriptionElement.innerHTML = '<small>Earnings - Spends - Investments</small>';
+            iconElement.className = 'fas fa-piggy-bank fa-lg';
+            showingCashInHand = false;
+        }
+    }
+    
+    // Toggle between Monthly Savings and Monthly Cash in Hand view
+    let showingMonthlyCashInHand = false;
+    
+    function toggleMonthlySavingsView() {
+        const titleElement = document.getElementById('monthly-savings-title');
+        const amountElement = document.getElementById('monthly-savings-amount');
+        const descriptionElement = document.getElementById('monthly-savings-description');
+        
+    // Use the values passed from Flask (quoted for template safety in editor)
+    const monthlySavings = parseFloat("{{ current_monthly_savings|default(0) }}") || 0;
+    const monthlyCashInHand = parseFloat("{{ current_monthly_cash_in_hand|default(0) }}") || 0;
+        
+        if (!showingMonthlyCashInHand) {
+            // Switch to Monthly Cash in Hand view
+            titleElement.textContent = 'Cash in Hand (Month)';
+            amountElement.textContent = '₹' + monthlyCashInHand.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            descriptionElement.textContent = 'Monthly available cash';
+            showingMonthlyCashInHand = true;
+        } else {
+            // Switch back to Monthly Savings view
+            titleElement.textContent = 'Savings (Month)';
+            amountElement.textContent = '₹' + monthlySavings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            descriptionElement.textContent = 'Earnings - Spends - Investments';
+            showingMonthlyCashInHand = false;
+        }
+    }
 </script>
 {% endblock %}
