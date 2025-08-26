@@ -13,7 +13,9 @@
 
 {% block content %}
 <!-- Store the JSON data in hidden elements to access them in JavaScript -->
-<script type="application/json" id="category-data">{{ category_data|safe }}</script>
+<script type="application/json" id="spend-category-data">{{ spend_category_data|safe }}</script>
+<script type="application/json" id="investment-category-data">{{ investment_category_data|safe }}</script>
+<script type="application/json" id="savings-category-data">{{ savings_category_data|safe }}</script>
 <script type="application/json" id="monthly-trends">{{ monthly_trends|safe }}</script>
 <script type="application/json" id="yearly-trends">{{ yearly_trends|safe }}</script>
 
@@ -65,6 +67,7 @@
                             <option value="Earning">Earning</option>
                             <option value="Spend">Spend</option>
                             <option value="Investment">Investment</option>
+                            <option value="Savings">Savings</option>
                         </select>
                     </div>
                     
@@ -103,22 +106,49 @@
         </div>
         
         <!-- Category Breakdown -->
-        <div class="row g-4">
-            <!-- Pie Chart -->
-            <div class="col-md-6">
+        <div class="row g-4 mb-4">
+            <!-- Spend by Category -->
+            <div class="col-lg-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-light">
                         <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Spend by Category</h5>
                     </div>
                     <div class="card-body d-flex align-items-center justify-content-center">
-                        <canvas id="categoryPieChart" height="250"></canvas>
+                        <canvas id="spendCategoryPieChart" height="250"></canvas>
                     </div>
                 </div>
             </div>
             
-            <!-- Yearly Trend Chart -->
-            <div class="col-md-6">
+            <!-- Savings by Category -->
+            <div class="col-lg-4">
                 <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0"><i class="fas fa-piggy-bank me-2"></i>Savings by Category</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="savingsCategoryPieChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Investment by Category -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Investment by Category</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="investmentCategoryPieChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trends -->
+        <div class="row g-4">
+            <!-- Yearly Trend Chart -->
+            <div class="col-12">
+                <div class="card shadow-sm">
                     <div class="card-header bg-light">
                         <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Yearly Trends</h5>
                     </div>
@@ -136,50 +166,63 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Parse the data from the server
-        const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+        const spendCategoryData = JSON.parse(document.getElementById('spend-category-data').textContent);
+        const investmentCategoryData = JSON.parse(document.getElementById('investment-category-data').textContent);
+        const savingsCategoryData = JSON.parse(document.getElementById('savings-category-data').textContent);
         const monthlyTrends = JSON.parse(document.getElementById('monthly-trends').textContent);
         const yearlyTrends = JSON.parse(document.getElementById('yearly-trends').textContent);
         
-        // Set up category pie chart
-        const categoryLabels = Object.keys(categoryData || {});
-        const categoryValues = Object.values(categoryData || {});
-        const categoryColors = generateColors(categoryLabels.length);
-        
-        const ctxPie = document.getElementById('categoryPieChart').getContext('2d');
-        const categoryPieChart = new Chart(ctxPie, {
-            type: 'pie',
-            data: {
-                labels: categoryLabels,
-                datasets: [{
-                    data: categoryValues,
-                    backgroundColor: categoryColors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            boxWidth: 15
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce(function(acc, data) { return acc + data; }, 0);
-                                const percentage = ((value * 100) / total).toFixed(1);
-                                return label + ': ₹' + value.toLocaleString() + ' (' + percentage + '%)';
+        // Helper function to create pie chart
+        function createPieChart(canvasId, data, title) {
+            const labels = Object.keys(data || {});
+            const values = Object.values(data || {});
+            const colors = generateColors(labels.length);
+            
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce(function(acc, data) { return acc + data; }, 0);
+                                    const percentage = total > 0 ? ((value * 100) / total).toFixed(1) : 0;
+                                    return label + ': ₹' + value.toLocaleString() + ' (' + percentage + '%)';
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+        
+        // Create all pie charts
+        const spendPieChart = createPieChart('spendCategoryPieChart', spendCategoryData, 'Spend by Category');
+        const savingsPieChart = createPieChart('savingsCategoryPieChart', savingsCategoryData, 'Savings by Category');
+        const investmentPieChart = createPieChart('investmentCategoryPieChart', investmentCategoryData, 'Investment by Category');
         
         // Set up monthly trend chart
         const monthLabels = Object.keys(monthlyTrends || {}).sort();
@@ -193,10 +236,7 @@
             return monthlyTrends[month] && monthlyTrends[month]['Investment'] ? monthlyTrends[month]['Investment'] : 0;
         });
         const monthlySavings = monthLabels.map(function(month) {
-            const earning = monthlyTrends[month] && monthlyTrends[month]['Earning'] ? monthlyTrends[month]['Earning'] : 0;
-            const spend = monthlyTrends[month] && monthlyTrends[month]['Spend'] ? monthlyTrends[month]['Spend'] : 0;
-            const investment = monthlyTrends[month] && monthlyTrends[month]['Investment'] ? monthlyTrends[month]['Investment'] : 0;
-            return earning - spend - investment;
+            return monthlyTrends[month] && monthlyTrends[month]['Savings'] ? monthlyTrends[month]['Savings'] : 0;
         });
         
         // Format the month labels
@@ -293,10 +333,7 @@
             return yearlyTrends[year] && yearlyTrends[year]['Investment'] ? yearlyTrends[year]['Investment'] : 0;
         });
         const yearlySavings = yearLabels.map(function(year) {
-            const earning = yearlyTrends[year] && yearlyTrends[year]['Earning'] ? yearlyTrends[year]['Earning'] : 0;
-            const spend = yearlyTrends[year] && yearlyTrends[year]['Spend'] ? yearlyTrends[year]['Spend'] : 0;
-            const investment = yearlyTrends[year] && yearlyTrends[year]['Investment'] ? yearlyTrends[year]['Investment'] : 0;
-            return earning - spend - investment;
+            return yearlyTrends[year] && yearlyTrends[year]['Savings'] ? yearlyTrends[year]['Savings'] : 0;
         });
         
         const ctxYearly = document.getElementById('yearlyTrendChart').getContext('2d');
