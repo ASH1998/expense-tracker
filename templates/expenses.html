@@ -30,6 +30,7 @@
                             <option value="Earning">Earning</option>
                             <option value="Spend">Spend</option>
                             <option value="Investment">Investment</option>
+                            <option value="Savings">Savings</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -103,11 +104,13 @@
                                             <span class="badge bg-danger">{{ expense.type }}</span>
                                         {% elif expense.type == 'Investment' %}
                                             <span class="badge bg-info">{{ expense.type }}</span>
+                                        {% elif expense.type == 'Savings' %}
+                                            <span class="badge bg-primary">{{ expense.type }}</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ expense.category }}</td>
-                                    <td class="fw-bold {% if expense.type == 'Earning' %}text-success{% elif expense.type == 'Spend' %}text-danger{% elif expense.type == 'Investment' %}text-info{% endif %}">
-                                        {% if expense.type == 'Earning' %}+{% elif expense.type == 'Spend' %}-{% endif %}{{ "{:,.2f}".format(expense.amount|float) }}
+                                    <td class="fw-bold {% if expense.type == 'Earning' %}text-success{% elif expense.type == 'Spend' %}text-danger{% elif expense.type == 'Investment' %}text-info{% elif expense.type == 'Savings' %}text-primary{% endif %}">
+                                        {% if expense.type == 'Earning' %}+{% elif expense.type == 'Spend' %}-{% elif expense.type == 'Savings' %}+{% endif %}{{ "{:,.2f}".format(expense.amount|float) }}
                                     </td>
                                     <td>{{ expense.description }}</td>
                                     <td>
@@ -156,6 +159,7 @@
                             <option value="Earning">Earning</option>
                             <option value="Spend">Spend</option>
                             <option value="Investment">Investment</option>
+                            <option value="Savings">Savings</option>
                         </select>
                     </div>
                     <div class="mb-3">
