@@ -71,7 +71,7 @@
                     </div>
                 </div>
                 <h3 class="card-text fw-bold">₹{{ "{:,.2f}".format(savings) }}</h3>
-                <p class="card-text text-white-50 mt-auto"><small>Earnings - Spends</small></p>
+                <p class="card-text text-white-50 mt-auto"><small>Earnings - Spends - Investments</small></p>
             </div>
         </div>
     </div>
@@ -261,7 +261,7 @@
                 earnings: [monthlyData.Earning[ym] || 0],
                 spends: [monthlyData.Spend[ym] || 0],
                 investments: [monthlyData.Investment[ym] || 0],
-                savings: [(monthlyData.Earning[ym] || 0) - (monthlyData.Spend[ym] || 0)]
+                savings: [(monthlyData.Earning[ym] || 0) - (monthlyData.Spend[ym] || 0) - (monthlyData.Investment[ym] || 0)]
             };
         }
         function getSingleYearChartData(year) {
@@ -278,7 +278,7 @@
                 earnings: [earnings],
                 spends: [spends],
                 investments: [investments],
-                savings: [earnings - spends]
+                savings: [earnings - spends - investments]
             };
         }
         function getMonthlyChartData() {
@@ -286,7 +286,7 @@
             const earnings = months.map(month => monthlyData.Earning[month] || 0);
             const spends = months.map(month => monthlyData.Spend[month] || 0);
             const investments = months.map(month => monthlyData.Investment[month] || 0);
-            const savings = months.map((month, i) => (monthlyData.Earning[month] || 0) - (monthlyData.Spend[month] || 0));
+            const savings = months.map((month, i) => (monthlyData.Earning[month] || 0) - (monthlyData.Spend[month] || 0) - (monthlyData.Investment[month] || 0));
             const formattedMonths = months.map(getMonthLabel);
             return {
                 labels: formattedMonths,
@@ -308,7 +308,7 @@
             const earnings = years.map(year => yearlyMap[year].Earning || 0);
             const spends = years.map(year => yearlyMap[year].Spend || 0);
             const investments = years.map(year => yearlyMap[year].Investment || 0);
-            const savings = years.map((year, i) => (yearlyMap[year].Earning || 0) - (yearlyMap[year].Spend || 0));
+            const savings = years.map((year, i) => (yearlyMap[year].Earning || 0) - (yearlyMap[year].Spend || 0) - (yearlyMap[year].Investment || 0));
             return {
                 labels: years,
                 earnings, spends, investments, savings
@@ -321,7 +321,7 @@
             const earning = monthlyData.Earning[ym] || 0;
             const spend = monthlyData.Spend[ym] || 0;
             const investment = monthlyData.Investment[ym] || 0;
-            const savings = earning - spend;
+            const savings = earning - spend - investment;
             document.getElementById('monthly-earning').textContent = '₹' + earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             document.getElementById('monthly-spend').textContent = '₹' + spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             document.getElementById('monthly-investment').textContent = '₹' + investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});

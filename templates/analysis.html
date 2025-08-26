@@ -195,7 +195,8 @@
         const monthlySavings = monthLabels.map(function(month) {
             const earning = monthlyTrends[month] && monthlyTrends[month]['Earning'] ? monthlyTrends[month]['Earning'] : 0;
             const spend = monthlyTrends[month] && monthlyTrends[month]['Spend'] ? monthlyTrends[month]['Spend'] : 0;
-            return earning - spend;
+            const investment = monthlyTrends[month] && monthlyTrends[month]['Investment'] ? monthlyTrends[month]['Investment'] : 0;
+            return earning - spend - investment;
         });
         
         // Format the month labels
@@ -294,7 +295,8 @@
         const yearlySavings = yearLabels.map(function(year) {
             const earning = yearlyTrends[year] && yearlyTrends[year]['Earning'] ? yearlyTrends[year]['Earning'] : 0;
             const spend = yearlyTrends[year] && yearlyTrends[year]['Spend'] ? yearlyTrends[year]['Spend'] : 0;
-            return earning - spend;
+            const investment = yearlyTrends[year] && yearlyTrends[year]['Investment'] ? yearlyTrends[year]['Investment'] : 0;
+            return earning - spend - investment;
         });
         
         const ctxYearly = document.getElementById('yearlyTrendChart').getContext('2d');

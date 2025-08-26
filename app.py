@@ -179,7 +179,7 @@ def dashboard():
         earnings = df[df['type'] == 'Earning']['amount'].sum()
         spends = df[df['type'] == 'Spend']['amount'].sum()
         investments = df[df['type'] == 'Investment']['amount'].sum()
-        savings = earnings - spends
+        savings = earnings - spends - investments
         
         print(f"Dashboard calculations - Earnings: {earnings}, Spends: {spends}, Investments: {investments}")
         
