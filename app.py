@@ -179,9 +179,11 @@ def dashboard():
         earnings = df[df['type'] == 'Earning']['amount'].sum()
         spends = df[df['type'] == 'Spend']['amount'].sum()
         investments = df[df['type'] == 'Investment']['amount'].sum()
-        savings = earnings - spends - investments
+        savings_type = df[df['type'] == 'Savings']['amount'].sum()
+        savings = earnings - spends - investments 
+        cash_in_hand = earnings - spends - investments - savings_type
         
-        print(f"Dashboard calculations - Earnings: {earnings}, Spends: {spends}, Investments: {investments}")
+        print(f"Dashboard calculations - Earnings: {earnings}, Spends: {spends}, Investments: {investments}, Savings Type: {savings_type}, Cash in Hand: {cash_in_hand}")
         
         # Get latest 5 records and ensure they have the right format for template
         latest_records = df.sort_values('date', ascending=False).head(5)
@@ -190,17 +192,31 @@ def dashboard():
         # Monthly breakdown for chart (last 12 months)
         df['month'] = df['date'].dt.strftime('%Y-%m')
         monthly_data = {}
-        for type_val in ['Earning', 'Spend', 'Investment']:
+        for type_val in ['Earning', 'Spend', 'Investment', 'Savings']:
             type_df = df[df['type'] == type_val]
             monthly_data[type_val] = type_df.groupby('month')['amount'].sum().to_dict()
+        
+        # Calculate monthly savings and cash in hand for current month
+        current_month = datetime.now().strftime('%Y-%m')
+        current_monthly_earnings = monthly_data['Earning'].get(current_month, 0)
+        current_monthly_spends = monthly_data['Spend'].get(current_month, 0)
+        current_monthly_investments = monthly_data['Investment'].get(current_month, 0)
+        current_monthly_savings_type = monthly_data['Savings'].get(current_month, 0)
+        
+        current_monthly_savings = current_monthly_earnings - current_monthly_spends - current_monthly_investments
+        current_monthly_cash_in_hand = current_monthly_earnings - current_monthly_spends - current_monthly_investments - current_monthly_savings_type
     else:
-        earnings, spends, investments, savings = 0, 0, 0, 0
+        earnings, spends, investments, savings, cash_in_hand = 0, 0, 0, 0, 0
+        current_monthly_savings, current_monthly_cash_in_hand = 0, 0
         latest_records_list = []
-        monthly_data = {'Earning': {}, 'Spend': {}, 'Investment': {}}
+        monthly_data = {'Earning': {}, 'Spend': {}, 'Investment': {}, 'Savings': {}}
     
     return render_template('dashboard.html', 
                           earnings=earnings, spends=spends, 
                           investments=investments, savings=savings,
+                          cash_in_hand=cash_in_hand,
+                          current_monthly_savings=current_monthly_savings,
+                          current_monthly_cash_in_hand=current_monthly_cash_in_hand,
                           latest_records=latest_records_list,
                           monthly_data=json.dumps(monthly_data),
                           settings=settings)
@@ -213,8 +229,10 @@ def analysis():
     
     # Process data for charts
     if not df.empty:
-        # Category breakdown for pie chart
-        category_data = df[df['type'] == 'Spend'].groupby('category')['amount'].sum().to_dict()
+        # Category breakdown for pie charts
+        spend_category_data = df[df['type'] == 'Spend'].groupby('category')['amount'].sum().to_dict()
+        investment_category_data = df[df['type'] == 'Investment'].groupby('category')['amount'].sum().to_dict()
+        savings_category_data = df[df['type'] == 'Savings'].groupby('category')['amount'].sum().to_dict()
         
         # Monthly trend for all types
         df['month'] = df['date'].dt.strftime('%Y-%m')
@@ -226,12 +244,16 @@ def analysis():
         yearly_trends = df.groupby(['year', 'type'])['amount'].sum().reset_index()
         yearly_trends_dict = yearly_trends.pivot(index='year', columns='type', values='amount').fillna(0).to_dict('index')
     else:
-        category_data = {}
+        spend_category_data = {}
+        investment_category_data = {}
+        savings_category_data = {}
         monthly_trends_dict = {}
         yearly_trends_dict = {}
     
     return render_template('analysis.html', 
-                          category_data=json.dumps(category_data),
+                          spend_category_data=json.dumps(spend_category_data),
+                          investment_category_data=json.dumps(investment_category_data),
+                          savings_category_data=json.dumps(savings_category_data),
                           monthly_trends=json.dumps(monthly_trends_dict),
                           yearly_trends=json.dumps(yearly_trends_dict),
                           settings=settings)
@@ -548,4 +570,4 @@ if __name__ == '__main__':
                     |_|                                                        
         """
     print(ttrack)
-    app.run(debug=True)
+    app.run(debug=True, port=5600)
