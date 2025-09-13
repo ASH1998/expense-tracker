@@ -228,7 +228,15 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const monthlyData = JSON.parse('{{ monthly_data|safe }}');
-        let allMonths = Object.keys(Object.values(monthlyData)[0] || {}).sort();
+        // Build union of months across all types
+        function collectAllMonths(dataObj) {
+            const set = new Set();
+            Object.keys(dataObj || {}).forEach(type => {
+                Object.keys(dataObj[type] || {}).forEach(m => set.add(m));
+            });
+            return Array.from(set).sort();
+        }
+        let allMonths = collectAllMonths(monthlyData);
         let allYears = Array.from(new Set(allMonths.map(m => m.split('-')[0]))).sort();
 
         const MONTH_NAMES = [
@@ -338,7 +346,7 @@
             document.getElementById('monthly-earning').textContent = '₹' + earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             document.getElementById('monthly-spend').textContent = '₹' + spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             document.getElementById('monthly-investment').textContent = '₹' + investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-            document.getElementById('monthly-savings').textContent = '₹' + savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('monthly-savings-amount').textContent = '₹' + savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
             
             // Update card headers with specific month/year
             updateCardHeaders('monthly', month, year);
@@ -434,12 +442,17 @@
             }
         });
 
-        populateYearSelect();
-        let selectedYear = allYears[allYears.length - 1];
-        yearSelect.value = selectedYear;
-        populateMonthSelect(selectedYear);
-        let selectedMonth = monthSelect.options[monthSelect.options.length - 1]?.value || "01";
-        monthSelect.value = selectedMonth;
+    populateYearSelect();
+    // Use the current calendar month/year as default selection
+    const now = new Date();
+    const currentYear = String(now.getFullYear());
+    const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+    let selectedYear = allYears.includes(currentYear) ? currentYear : (allYears[allYears.length - 1] || currentYear);
+    yearSelect.value = selectedYear;
+    populateMonthSelect(selectedYear);
+    const availableMonths = Array.from(monthSelect.options).map(o => o.value);
+    let selectedMonth = availableMonths.includes(currentMonth) ? currentMonth : (availableMonths[availableMonths.length - 1] || "01");
+    monthSelect.value = selectedMonth;
 
         // Initial update for monthly cards
         updateMonthlyCards(selectedYear, selectedMonth);
@@ -544,7 +557,7 @@
                     document.getElementById('monthly-earning').textContent = '₹' + yearTotals.earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                     document.getElementById('monthly-spend').textContent = '₹' + yearTotals.spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                     document.getElementById('monthly-investment').textContent = '₹' + yearTotals.investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-                    document.getElementById('monthly-savings').textContent = '₹' + yearTotals.savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                    document.getElementById('monthly-savings-amount').textContent = '₹' + yearTotals.savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                     
                     // Update headers for yearly view
                     updateCardHeaders('yearly', null, selectedYear);
@@ -594,7 +607,7 @@
                 document.getElementById('monthly-earning').textContent = '₹' + yearTotals.earning.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                 document.getElementById('monthly-spend').textContent = '₹' + yearTotals.spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                 document.getElementById('monthly-investment').textContent = '₹' + yearTotals.investment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-                document.getElementById('monthly-savings').textContent = '₹' + yearTotals.savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                document.getElementById('monthly-savings-amount').textContent = '₹' + yearTotals.savings.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                 
                 // Update card headers when year changes in yearly view
                 updateCardHeaders('yearly', null, selectedYear);
