@@ -426,8 +426,18 @@ def api_expenses():
     if expense_type:
         df = df[df['type'] == expense_type]
     
-    # Convert dates to string for JSON serialization
-    df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+    # Normalize/clean data to avoid NaN/NaT in JSON
+    if not df.empty:
+        # Ensure amount is numeric and non-null
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce').fillna(0)
+        # Convert dates to string for JSON serialization
+        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+        # Fill text columns to avoid bare NaN which breaks JSON.parse
+        obj_cols = df.select_dtypes(include=['object']).columns
+        if len(obj_cols) > 0:
+            df[obj_cols] = df[obj_cols].fillna('')
+        # For any remaining missing values, replace with None
+        df = df.where(pd.notnull(df), None)
     
     return jsonify(df.to_dict('records'))
 
